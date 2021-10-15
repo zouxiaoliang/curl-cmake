@@ -69,13 +69,13 @@ function(curlMain)
 endfunction()
 
 function(easyMain)
-    add_library(threadpatry_curl_easy
+    add_library(thirdparty_curl_easy
         easy/AutoThreadsafe.cpp
         easy/ftp.cpp
         easy/httpcli.cpp
         )
-    target_link_libraries(threadpatry_curl_easy thirdparty_curl thirdparty_openssl)
-    target_include_directories(threadpatry_curl_easy INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
+    target_link_libraries(thirdparty_curl_easy thirdparty_curl thirdparty_openssl)
+    target_include_directories(thirdparty_curl_easy INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
 endfunction()
 
 curlMain()
