@@ -14,6 +14,10 @@ extern "C" {
  */
 namespace easy { namespace utils { namespace ftp {
 
+enum result {
+    //
+};
+
 /**
  * @brief The Channel struct
  */
