@@ -53,7 +53,7 @@ function(curlMain)
         INSTALL_COMMAND ${CMD_MAKE} install
         UPDATE_COMMAND ""
         )
-
+    add_dependencies(curl thirdparty_openssl)
     add_dependencies(thirdparty_curl_static curl)
 
     set_target_properties(thirdparty_curl_static PROPERTIES IMPORTED_LOCATION
