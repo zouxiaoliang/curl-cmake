@@ -1,8 +1,9 @@
 #ifndef HTTPCLI_H
 #define HTTPCLI_H
 
-#include <string>
 #include <map>
+#include <string>
+#include <vector>
 
 #include "result.h"
 
@@ -140,6 +141,25 @@ curl::result download(const char* url, const char* local_name, time_t timeout = 
  * @return true/false
  */
 curl::result request(const char* url, std::string& response);
+/**
+ * @brief get
+ * @param url
+ * @param headers
+ * @param args
+ * @param response
+ * @return
+ */
+curl::result get(const char* url, const std::vector<std::string>& headers, const std::map<std::string, std::string>& args, std::string& response);
+
+/**
+ * @brief post
+ * @param url
+ * @param headers
+ * @param args
+ * @param response
+ * @return
+ */
+curl::result post(const char* url, const std::vector<std::string>& headers, const std::map<std::string, std::string>& args, std::string& response);
 
 /**
  * @brief request 发送http请求
@@ -149,8 +169,9 @@ curl::result request(const char* url, std::string& response);
  * @param curl_code curl返回编码
  * @return true/false
  */
+curl::result request(const char* url, const std::vector<std::string>& headers, std::string& response);
 curl::result request(const char* url, const std::map<std::string, std::string>& args, std::string& response);
-
+curl::result request(const char* url, const std::vector<std::string>& headers, const std::map<std::string, std::string>& args, std::string& response);
 /**
  * @brief is_ok 判断http请求是否成功
  * @param r 结果
