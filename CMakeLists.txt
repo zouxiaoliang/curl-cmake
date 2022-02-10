@@ -35,6 +35,7 @@ function(curlMain)
 
     # 依赖库 https://curl.se/docs/libs.html
     set(configure_command
+        "${CMAKE_COMMAND}" -E env "CC=${CMAKE_C_COMPILER}" "AR=${CMAKE_AR}"
         perl ./configure
         "--prefix=${install_prefix}"
         --without-librtmp --without-libidn2 --without-zstd --without-brotli --without-nghttp2 --without-nghttp3 --without-ldap-lib
