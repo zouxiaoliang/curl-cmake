@@ -11,15 +11,40 @@ extern "C" {
 #include <curl/curl.h>
 }
 
-size_t writedata_s(void* contents, size_t size, size_t nmemb, void* userp) {
+size_t _writedata_s(void* contents, size_t size, size_t nmemb, void* userp) {
     ((std::string*)userp)->append((char*)contents, size * nmemb);
     return size * nmemb;
 }
 
-size_t writedata_f(void* contents, size_t size, size_t nmemb, void* userp) {
+size_t _writedata_f(void* contents, size_t size, size_t nmemb, void* userp) {
     int* handle = (int*)userp;
     write(*handle, (char*)contents, size * nmemb);
     return size * nmemb;
+}
+
+struct WriteThis {
+    const char* readptr;
+    size_t      sizeleft;
+};
+
+size_t _readdata_s(char* dest, size_t size, size_t nmemb, void* userp) {
+    struct WriteThis* wt          = (struct WriteThis*)userp;
+    size_t            buffer_size = size * nmemb;
+
+    if (wt->sizeleft) {
+        /* copy as much as possible from the source to the destination */
+        size_t copy_this_much = wt->sizeleft;
+        if (copy_this_much > buffer_size) {
+            copy_this_much = buffer_size;
+        }
+        memcpy(dest, wt->readptr, copy_this_much);
+
+        wt->readptr += copy_this_much;
+        wt->sizeleft -= copy_this_much;
+        return copy_this_much; /* we copied this many bytes */
+    }
+
+    return 0; /* no more data left to deliver */
 }
 
 size_t _save_header(void* ptr, size_t size, size_t nmemb, void* data) {
@@ -48,14 +73,18 @@ size_t _filesize_for_url(CURL* curl, const char* url) {
     return (size_t)filesize;
 }
 
-size_t easy::utils::httpcli::filesize_for_url(const std::string& url) {
+namespace easy {
+namespace utils {
+namespace httpcli {
+
+size_t filesize_for_url(const std::string& url) {
     CURL*  curl        = curl_easy_init();
     size_t remote_size = _filesize_for_url(curl, url.c_str());
     curl_easy_cleanup(curl);
     return remote_size;
 }
 
-easy::utils::curl::result easy::utils::httpcli::download(const char* url, const char* local_name, time_t timeout, bool is_continue) {
+curl::result download(const char* url, const char* local_name, time_t timeout, bool is_continue) {
     off_t seek = 0;
     CURL* curl = curl_easy_init();
     if (NULL == curl) {
@@ -81,7 +110,7 @@ easy::utils::curl::result easy::utils::httpcli::download(const char* url, const 
     ::lseek(write_handle, seek, SEEK_SET);
 
     curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writedata_f);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, _writedata_f);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &write_handle);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, timeout);
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5);
@@ -103,13 +132,13 @@ easy::utils::curl::result easy::utils::httpcli::download(const char* url, const 
     return {.curl_code = res, .response_code = response_code};
 }
 
-easy::utils::curl::result easy::utils::httpcli::request(const char* url, std::string& response) {
+curl::result request(const char* url, std::string& response) {
     CURL* curl = curl_easy_init();
     if (NULL == curl) {
         return {.curl_code = CURLE_FAILED_INIT, .response_code = -1};
     }
     curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writedata_s);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, _writedata_s);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5);
@@ -128,7 +157,7 @@ easy::utils::curl::result easy::utils::httpcli::request(const char* url, std::st
     return {.curl_code = res, .response_code = response_code};
 }
 
-easy::utils::curl::result easy::utils::httpcli::request(const char* url, const std::map<std::string, std::string>& args, std::string& response) {
+curl::result request(const char* url, const std::map<std::string, std::string>& args, std::string& response) {
     std::string request_url = url;
     request_url.append("?");
     std::string split_char = "";
@@ -143,7 +172,7 @@ easy::utils::curl::result easy::utils::httpcli::request(const char* url, const s
     return request(request_url.c_str(), response);
 }
 
-easy::utils::curl::result easy::utils::httpcli::request(const char* url, const std::vector<std::string>& headers, const std::map<std::string, std::string>& args, std::string& response) {
+curl::result request(const char* url, const std::vector<std::string>& headers, const std::map<std::string, std::string>& args, std::string& response) {
     std::string request_url = url;
     request_url.append("?");
     std::string split_char = "";
@@ -158,7 +187,7 @@ easy::utils::curl::result easy::utils::httpcli::request(const char* url, const s
     return request(request_url.c_str(), headers, response);
 }
 
-easy::utils::curl::result easy::utils::httpcli::request(const char* url, const std::vector<std::string>& headers, std::string& response) {
+curl::result request(const char* url, const std::vector<std::string>& headers, std::string& response) {
     CURL* curl = curl_easy_init();
     if (NULL == curl) {
         return {.curl_code = CURLE_FAILED_INIT, .response_code = -1};
@@ -172,7 +201,7 @@ easy::utils::curl::result easy::utils::httpcli::request(const char* url, const s
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
     }
     curl_easy_setopt(curl, CURLOPT_URL, url);
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writedata_s);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, _writedata_s);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5);
@@ -192,7 +221,7 @@ easy::utils::curl::result easy::utils::httpcli::request(const char* url, const s
     return {.curl_code = res, .response_code = response_code};
 }
 
-easy::utils::curl::result easy::utils::httpcli::get(const char* url, const std::vector<std::string>& headers, const std::map<std::string, std::string>& args, std::string& response) {
+curl::result get(const char* url, const std::vector<std::string>& headers, const std::map<std::string, std::string>& args, std::string& response) {
     CURL* curl = curl_easy_init();
     if (NULL == curl) {
         return {.curl_code = CURLE_FAILED_INIT, .response_code = -1};
@@ -220,7 +249,7 @@ easy::utils::curl::result easy::utils::httpcli::get(const char* url, const std::
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
     }
     curl_easy_setopt(curl, CURLOPT_URL, request_url.c_str());
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writedata_s);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, _writedata_s);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5);
@@ -240,7 +269,7 @@ easy::utils::curl::result easy::utils::httpcli::get(const char* url, const std::
     return {.curl_code = res, .response_code = response_code};
 }
 
-easy::utils::curl::result easy::utils::httpcli::post(const char* url, const std::vector<std::string>& headers, const std::map<std::string, std::string>& args, std::string& response) {
+curl::result post(const char* url, const std::vector<std::string>& headers, const std::map<std::string, std::string>& args, std::string& response) {
     CURL* curl = curl_easy_init();
     if (NULL == curl) {
         return {.curl_code = CURLE_FAILED_INIT, .response_code = -1};
@@ -258,7 +287,6 @@ easy::utils::curl::result easy::utils::httpcli::post(const char* url, const std:
             split_char = "&";
         }
     }
-
     struct curl_slist* chunk = nullptr;
     for (const auto& item : headers) {
         chunk = curl_slist_append(chunk, item.c_str());
@@ -266,9 +294,11 @@ easy::utils::curl::result easy::utils::httpcli::post(const char* url, const std:
     if (nullptr != chunk) {
         curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
     }
+
     curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_POST, 1L);
     curl_easy_setopt(curl, CURLOPT_POSTFIELDS, postfields.c_str());
-    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, writedata_s);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, _writedata_s);
     curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
     curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
     curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5);
@@ -287,3 +317,49 @@ easy::utils::curl::result easy::utils::httpcli::post(const char* url, const std:
 
     return {.curl_code = res, .response_code = response_code};
 }
+
+curl::result post(const char* url, const std::vector<std::string>& headers, const std::string& body, std::string& response) {
+    CURL* curl = curl_easy_init();
+    if (NULL == curl) {
+        return {.curl_code = CURLE_FAILED_INIT, .response_code = -1};
+    }
+
+    struct WriteThis wt;
+
+    wt.readptr  = body.c_str();
+    wt.sizeleft = body.length();
+
+    struct curl_slist* chunk = nullptr;
+    for (const auto& item : headers) {
+        chunk = curl_slist_append(chunk, item.c_str());
+    }
+    if (nullptr != chunk) {
+        curl_easy_setopt(curl, CURLOPT_HTTPHEADER, chunk);
+    }
+    curl_easy_setopt(curl, CURLOPT_URL, url);
+    curl_easy_setopt(curl, CURLOPT_POST, 1L);
+    curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, _writedata_s);
+    curl_easy_setopt(curl, CURLOPT_WRITEDATA, &response);
+    curl_easy_setopt(curl, CURLOPT_READFUNCTION, _readdata_s);
+    curl_easy_setopt(curl, CURLOPT_READDATA, &wt);
+    curl_easy_setopt(curl, CURLOPT_TIMEOUT, 5);
+    curl_easy_setopt(curl, CURLOPT_CONNECTTIMEOUT, 5);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYHOST, 0);
+    curl_easy_setopt(curl, CURLOPT_SSL_VERIFYPEER, 0);
+    curl_easy_setopt(curl, CURLOPT_NOSIGNAL, 1L);
+    //    curl_easy_setopt(curl, CURLOPT_PROXY_SSL_VERIFYPEER, 0);
+
+    CURLcode res           = curl_easy_perform(curl);
+    long     response_code = 200;
+    if (CURLE_OK == res) {
+        curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
+    }
+    curl_easy_cleanup(curl);
+    curl_slist_free_all(chunk);
+
+    return {.curl_code = res, .response_code = response_code};
+}
+
+} // namespace httpcli
+} // namespace utils
+} // namespace easy

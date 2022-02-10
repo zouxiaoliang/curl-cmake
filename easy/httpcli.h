@@ -160,6 +160,7 @@ curl::result get(const char* url, const std::vector<std::string>& headers, const
  * @return
  */
 curl::result post(const char* url, const std::vector<std::string>& headers, const std::map<std::string, std::string>& args, std::string& response);
+curl::result post(const char* url, const std::vector<std::string>& headers, const std::string& body, std::string& response);
 
 /**
  * @brief request 发送http请求
