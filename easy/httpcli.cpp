@@ -264,7 +264,9 @@ curl::result get(const char* url, const std::vector<std::string>& headers, const
         curl_easy_getinfo(curl, CURLINFO_RESPONSE_CODE, &response_code);
     }
     curl_easy_cleanup(curl);
-    curl_slist_free_all(chunk);
+    if (nullptr != chunk) {
+        curl_slist_free_all(chunk);
+    }
 
     return {.curl_code = res, .response_code = response_code};
 }
