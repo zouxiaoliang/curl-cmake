@@ -1,28 +1,31 @@
 #ifndef FTP_H
 #define FTP_H
 
-#include <string>
 #include <list>
-#include <vector>
+#include <string>
 #include <sys/stat.h>
+#include <vector>
 
 extern "C" {
 #include <curl/curl.h>
 }
+
 /**
  * @details 基于curl对ftp客户端接口的封装
  */
-namespace easy { namespace utils { namespace ftp {
+namespace easy {
+namespace utils {
+namespace ftp {
 
-enum result {
+enum result
+{
     //
 };
 
 /**
  * @brief The Channel struct
  */
-class Config
-{
+class Config {
 public:
     enum EMode
     {
@@ -38,9 +41,10 @@ public:
      * @param name 用户名
      * @param passwd 密码
      * @param mode
+     * @param is_sftp
      */
     Config();
-    Config(const std::string &ip, uint16_t port, const std::string &username, const std::string &password, int32_t mode);
+    Config(const std::string& ip, uint16_t port, const std::string& username, const std::string& password, int32_t mode, bool is_sftp = false);
     ~Config();
 
 public:
@@ -65,7 +69,7 @@ public:
     std::string password;
 
     /**
-     * @brief root_url 连接跟路径：ftp:host:port
+     * @brief root_url 连接跟路径：ftp://host:port
      */
     std::string root_url;
 
@@ -73,6 +77,11 @@ public:
      * @brief connection_mode 连接模式，主动和被动模式
      */
     int32_t connection_mode;
+
+    /**
+     * @brief is_sftp 是否使用sftp模式
+     */
+    bool is_sftp{false};
 };
 
 /**
@@ -81,7 +90,7 @@ public:
  * @param dir_name 目录名称
  * @return
  */
-bool mkdir(Config *config, const char *dir_name, int &curl_code);
+bool mkdir(Config* config, const char* dir_name, int& curl_code);
 
 /**
  * @brief rmdir 删除远端目录(目录内必须为空)
@@ -89,7 +98,7 @@ bool mkdir(Config *config, const char *dir_name, int &curl_code);
  * @param dir_name 目录名称
  * @return
  */
-bool rmdir(Config *config, const char *dir_name);
+bool rmdir(Config* config, const char* dir_name);
 
 /**
  * @brief rmfile 删除远端文件
@@ -97,14 +106,14 @@ bool rmdir(Config *config, const char *dir_name);
  * @param file_name 文件名
  * @return
  */
-bool rmfile(Config *config, const char *file_name);
+bool rmfile(Config* config, const char* file_name);
 
 /**
  * @brief cwd 切换ftp远端工作目录(暂不支持)
  * @param config
  * @return
  */
-bool cwd(Config *config, const char *path, int &curl_code);
+bool cwd(Config* config, const char* path, int& curl_code);
 
 /**
  * @brief pwd 获取远端服务器工作路径
@@ -112,7 +121,7 @@ bool cwd(Config *config, const char *path, int &curl_code);
  * @param curl_code 错误码
  * @return 当前工作路径
  */
-std::string pwd(Config *config, int &curl_code);
+std::string pwd(Config* config, int& curl_code);
 
 /**
  * @brief rn 重命名
@@ -121,7 +130,7 @@ std::string pwd(Config *config, int &curl_code);
  * @param newpath 新路径
  * @return
  */
-bool rename(Config *config, const char *oldpath, const char *newpath, int &curl_code);
+bool rename(Config* config, const char* oldpath, const char* newpath, int& curl_code);
 
 /**
  * @brief ls 输出远端ftp服务目录所有文件名，默认根目录
@@ -129,7 +138,7 @@ bool rename(Config *config, const char *oldpath, const char *newpath, int &curl_
  * @param path 远端路径路径
  * @return
  */
-std::vector<std::string> ls(Config *config, const char *path = "/");
+std::vector<std::string> ls(Config* config, const char* path = "/");
 
 /**
  * @brief download
@@ -139,7 +148,7 @@ std::vector<std::string> ls(Config *config, const char *path = "/");
  * @param curl_code
  * @return
  */
-bool download(Config *config, const char *src, const char *dst, int &curl_code);
+bool download(Config* config, const char* src, const char* dst, int& curl_code);
 
 /**
  * @brief upload
@@ -149,7 +158,7 @@ bool download(Config *config, const char *src, const char *dst, int &curl_code);
  * @param curl_code
  * @return
  */
-bool upload(Config *config, const char *src, const char *dst, int &curl_code);
+bool upload(Config* config, const char* src, const char* dst, int& curl_code);
 
 /**
  * @brief upload_and_rename
@@ -160,7 +169,13 @@ bool upload(Config *config, const char *src, const char *dst, int &curl_code);
  * @param curl_code
  * @return
  */
-bool upload_as(Config *config, const char *local_path, const char *temp_path, const char *remote_path, int &curl_code);
+bool upload_as(Config* config, const char* local_path, const char* temp_path, const char* remote_path, int& curl_code);
 
-}}}
+namespace ssl {
+bool upload(Config* config, const char* src, const char* dst, int& curl_code);
+}
+
+} // namespace ftp
+} // namespace utils
+} // namespace easy
 #endif // FTP_H

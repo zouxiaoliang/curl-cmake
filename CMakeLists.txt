@@ -40,6 +40,7 @@ function(curlMain)
         "--prefix=${install_prefix}"
         --without-librtmp --without-libidn2 --without-zstd --without-brotli --without-nghttp2 --without-nghttp3 --without-ldap-lib
         "--with-openssl=${THIRDPARTY_OPENSSL_PREFIX}"
+        "--with-libssh2=${THIRDPARTY_LIBSSH2L_PREFIX}"
         "CFLAGS=-fPIC"
         "CPPFLAGS=-fPIC"
         )
@@ -75,9 +76,18 @@ function(easyMain)
         easy/ftp.cpp
         easy/httpcli.cpp
         )
-    target_link_libraries(thirdparty_curl_easy thirdparty_curl thirdparty_openssl)
+    target_link_libraries(thirdparty_curl_easy thirdparty_curl thirdparty_openssl thirdparty_libssh2)
     target_include_directories(thirdparty_curl_easy INTERFACE "${CMAKE_CURRENT_SOURCE_DIR}")
+endfunction()
+
+function(ftpTest)
+    add_executable(ftp-test test/ftp.cpp)
+    target_link_libraries(ftp-test thirdparty_curl_easy)
+    if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+        target_link_libraries(ftp-test libunwind.a libc++abi.a libz.a dl rt)
+    endif()
 endfunction()
 
 curlMain()
 easyMain()
+ftpTest()
