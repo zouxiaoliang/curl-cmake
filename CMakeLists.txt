@@ -5,6 +5,8 @@ project(curl-cmake LANGUAGES CXX C)
 set(CMAKE_CXX_STANDARD 11)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+set(CMAKE_FIND_DEBUG_MODE 1)
+
 if (NOT UNIX)
     message(FATAL_ERROR "unsupporsted ${CMAKE_SYSTEM_NAME}")
 endif()
@@ -12,8 +14,15 @@ endif()
 if (NOT HAS_THIRDPARTY_OPENSSL)
     message(FATAL_ERROR "you need import 'openssl-cmake' project from github, cmd `git clone xxx`")
 else()
-    message(STATUS "openssl prefix: ${THIRDPARTY_OPENSSL_PREFIX}")
+    message(STATUS "curl-cmake depend openssl-cmake prefix: ${THIRDPARTY_OPENSSL_PREFIX}")
 endif()
+
+if (NOT HAS_THIRDPARTY_LIBSSH2)
+    message(FATAL_ERROR "you need import 'openssh2-cmake' project from github, cmd `git clone xxx`")
+else()
+    message(STATUS "curl-cmake depend openssh2-cmake prefix: ${THIRDPARTY_LIBSSH2_PREFIX}")
+endif()
+
 
 set (install_prefix "${CMAKE_CURRENT_BINARY_DIR}/local")
 
@@ -40,7 +49,7 @@ function(curlMain)
         "--prefix=${install_prefix}"
         --without-librtmp --without-libidn2 --without-zstd --without-brotli --without-nghttp2 --without-nghttp3 --without-ldap-lib
         "--with-openssl=${THIRDPARTY_OPENSSL_PREFIX}"
-        "--with-libssh2=${THIRDPARTY_LIBSSH2L_PREFIX}"
+        "--with-libssh2=${THIRDPARTY_LIBSSH2_PREFIX}"
         "CFLAGS=-fPIC"
         "CPPFLAGS=-fPIC"
         )
