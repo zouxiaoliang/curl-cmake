@@ -34,7 +34,7 @@ int main(int argc, char* argv[]) {
 
     auto r = easy::utils::ftp::upload(&config, src, dst, curl_code);
     if (!r) {
-        std::cout << "upload failed, local: " << src << ", remote: " << dst << ", what: " << curl_easy_strerror(static_cast<CURLcode>(curl_code)) << std::endl;
+        std::cout << "upload failed, local: " << src << ", remote: " << dst << ", code: " << curl_code << ", what: " << curl_easy_strerror(static_cast<CURLcode>(curl_code)) << std::endl;
     }
 
     return 0;
