@@ -47,7 +47,7 @@ function(curlMain)
         "${CMAKE_COMMAND}" -E env "CC=${CMAKE_C_COMPILER}" "AR=${CMAKE_AR}"
         perl ./configure
         "--prefix=${install_prefix}"
-        --without-librtmp --without-libidn2 --without-zstd --without-brotli --without-nghttp2 --without-nghttp3 --without-ldap-lib
+        --without-librtmp --without-libidn2 --without-zstd --without-brotli --without-nghttp2 --without-nghttp3 --without-ldap-lib --without-libpsl
         "--with-openssl=${THIRDPARTY_OPENSSL_PREFIX}"
         "--with-libssh2=${THIRDPARTY_LIBSSH2_PREFIX}"
         "CFLAGS=-fPIC"
@@ -74,6 +74,9 @@ function(curlMain)
     target_link_libraries(thirdparty_curl INTERFACE thirdparty_curl_static)
     if (CMAKE_SYSTEM_NAME MATCHES "Darwin")
         target_link_libraries(thirdparty_curl INTERFACE "-framework SystemConfiguration" dl z)
+    endif()
+    if (CMAKE_SYSTEM_NAME MATCHES "Linux")
+        target_link_libraries(thirdparty_curl INTERFACE dl z)
     endif()
     target_include_directories(thirdparty_curl INTERFACE "${install_prefix}/include")
 
