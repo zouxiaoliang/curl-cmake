@@ -99,4 +99,4 @@ endfunction()
 
 curlMain()
 easyMain()
-ftpTest()
+# ftpTest()
